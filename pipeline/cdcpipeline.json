@@ -1,5 +1,5 @@
 {
-	"name": "pipeline1",
+	"name": "cdcpipeline",
 	"properties": {
 		"activities": [
 			{
@@ -27,8 +27,8 @@
 				}
 			},
 			{
-				"name": "Copy data1",
-				"type": "Copy",
+				"name": "Data flow2",
+				"type": "ExecuteDataFlow",
 				"dependsOn": [
 					{
 						"activity": "Data flow1",
@@ -46,212 +46,16 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"source": {
-						"type": "ParquetSource",
-						"storeSettings": {
-							"type": "AzureBlobFSReadSettings",
-							"recursive": true,
-							"wildcardFolderPath": "sourcesystem/customer/active_temp",
-							"wildcardFileName": "*",
-							"enablePartitionDiscovery": false
-						},
-						"formatSettings": {
-							"type": "ParquetReadSettings"
-						}
+					"dataflow": {
+						"referenceName": "dataflow2",
+						"type": "DataFlowReference"
 					},
-					"sink": {
-						"type": "ParquetSink",
-						"storeSettings": {
-							"type": "AzureBlobFSWriteSettings",
-							"blockSizeInMB": 64
-						},
-						"formatSettings": {
-							"type": "ParquetWriteSettings"
-						}
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
 					},
-					"enableStaging": false,
-					"parallelCopies": 4,
-					"validateDataConsistency": false,
-					"dataIntegrationUnits": 4,
-					"translator": {
-						"type": "TabularTranslator",
-						"mappings": [
-							{
-								"source": {
-									"name": "index",
-									"type": "Int16",
-									"physicalType": "INT_16"
-								},
-								"sink": {
-									"name": "index",
-									"type": "Int16",
-									"physicalType": "INT_32"
-								}
-							},
-							{
-								"source": {
-									"name": "customerId",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "customerId",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "firstName",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "firstName",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "lastName",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "lastName",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "company",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "company",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "city",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "city",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "country",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "country",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "phone1",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "phone1",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "phone2",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "phone2",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "email",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "email",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "subscriptionDate",
-									"type": "DateTime",
-									"physicalType": "DATE"
-								},
-								"sink": {
-									"name": "subscriptionDate",
-									"type": "DateTime",
-									"physicalType": "INT_96"
-								}
-							},
-							{
-								"source": {
-									"name": "website",
-									"type": "String",
-									"physicalType": "UTF8"
-								},
-								"sink": {
-									"name": "website",
-									"type": "String",
-									"physicalType": "UTF8"
-								}
-							},
-							{
-								"source": {
-									"name": "hashVal",
-									"type": "Int64",
-									"physicalType": "INT64"
-								},
-								"sink": {
-									"name": "hashVal",
-									"type": "Int64",
-									"physicalType": "INT_64"
-								}
-							}
-						],
-						"typeConversion": true,
-						"typeConversionSettings": {
-							"allowDataTruncation": true,
-							"treatBooleanAsNumber": false
-						}
-					}
-				},
-				"inputs": [
-					{
-						"referenceName": "Parquet1",
-						"type": "DatasetReference"
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "Parquet2",
-						"type": "DatasetReference"
-					}
-				]
+					"traceLevel": "Fine"
+				}
 			}
 		],
 		"annotations": [],
