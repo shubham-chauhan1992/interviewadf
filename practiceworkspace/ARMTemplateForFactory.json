@@ -1,0 +1,705 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "practiceworkspace"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://onprem2cloud.dfs.core.windows.net/"
+		},
+		"connectAdfwithKeyVault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "@{linkedService().keyvaultUrl}"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/cdcpipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow1",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"master": {},
+									"incremental": {},
+									"writeActiveRecords": {},
+									"writeInactiveRecords": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Data flow2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Data flow1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-09-06T05:36:05Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow1')]",
+				"[concat(variables('factoryId'), '/dataflows/dataflow2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Parquet1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "sourcesystem/customer/active_temp",
+						"fileSystem": "edssilver"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "index",
+						"type": "INT_16"
+					},
+					{
+						"name": "customerId",
+						"type": "UTF8"
+					},
+					{
+						"name": "firstName",
+						"type": "UTF8"
+					},
+					{
+						"name": "lastName",
+						"type": "UTF8"
+					},
+					{
+						"name": "company",
+						"type": "UTF8"
+					},
+					{
+						"name": "city",
+						"type": "UTF8"
+					},
+					{
+						"name": "country",
+						"type": "UTF8"
+					},
+					{
+						"name": "phone1",
+						"type": "UTF8"
+					},
+					{
+						"name": "phone2",
+						"type": "UTF8"
+					},
+					{
+						"name": "email",
+						"type": "UTF8"
+					},
+					{
+						"name": "subscriptionDate",
+						"type": "DATE"
+					},
+					{
+						"name": "website",
+						"type": "UTF8"
+					},
+					{
+						"name": "hashVal",
+						"type": "INT64"
+					},
+					{
+						"name": "active_flag",
+						"type": "UTF8"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Parquet2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "sourcesystem/customer/active",
+						"fileSystem": "edssilver"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDataLakeStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/connectAdfwithKeyVault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"keyvaultUrl": {
+						"type": "string",
+						"defaultValue": "https://keyvault2024adf.vault.azure.net/"
+					}
+				},
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('connectAdfwithKeyVault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							},
+							"name": "master"
+						},
+						{
+							"linkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							},
+							"name": "incremental"
+						}
+					],
+					"sinks": [
+						{
+							"linkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							},
+							"name": "writeActiveRecords"
+						},
+						{
+							"linkedService": {
+								"referenceName": "AzureDataLakeStorage1",
+								"type": "LinkedServiceReference"
+							},
+							"name": "writeInactiveRecords"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "derivedColumn3"
+						},
+						{
+							"name": "captureInserts"
+						},
+						{
+							"name": "captureUpdates"
+						},
+						{
+							"name": "captureDeletes"
+						},
+						{
+							"name": "captureNoChange"
+						},
+						{
+							"name": "nochange"
+						},
+						{
+							"name": "delets"
+						},
+						{
+							"name": "updates"
+						},
+						{
+							"name": "inserts"
+						},
+						{
+							"name": "captureExpired"
+						},
+						{
+							"name": "expired"
+						},
+						{
+							"name": "union1"
+						},
+						{
+							"name": "gatherExpiredRecords"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          index as short,",
+						"          customerId as string,",
+						"          firstName as string,",
+						"          lastName as string,",
+						"          company as string,",
+						"          city as string,",
+						"          country as string,",
+						"          phone1 as string,",
+						"          phone2 as string,",
+						"          email as string,",
+						"          subscriptionDate as date,",
+						"          website as string,",
+						"          filename as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     inferDriftedColumnTypes: true,",
+						"     ignoreNoFilesFound: true,",
+						"     format: 'parquet',",
+						"     fileSystem: 'edssilver',",
+						"     folderPath: 'sourcesystem/customer/active',",
+						"     partitionBy('hash', 4,",
+						"          customerId",
+						"     )) ~> master",
+						"source(output(",
+						"          Index as short,",
+						"          {Customer Id} as string,",
+						"          {First Name} as string,",
+						"          {Last Name} as string,",
+						"          Company as string,",
+						"          City as string,",
+						"          Country as string,",
+						"          {Phone 1} as string,",
+						"          {Phone 2} as string,",
+						"          Email as string,",
+						"          {Subscription Date} as date,",
+						"          Website as string",
+						"     ),",
+						"     useSchema: false,",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     moveFiles: ['/sourcessystem/tablename/landed','/sourcessystem/tablename/processed'],",
+						"     format: 'delimited',",
+						"     fileSystem: 'edslandingzone',",
+						"     folderPath: 'sourcessystem/tablename/landed',",
+						"     columnDelimiter: ',',",
+						"     escapeChar: '\\\\',",
+						"     quoteChar: '\\\"',",
+						"     columnNamesAsHeader: true,",
+						"     partitionBy('hash', 4,",
+						"          {Customer Id}",
+						"     )) ~> incremental",
+						"select1 derive(masterhash = crc32(masterIndex,masterCustomerId,masterFirstName,masterLastName,masterCompany,masterCity,masterCountry,masterPhone1,masterPhone2,masterEmail,masterSubscriptionDate,masterWebsite)) ~> derivedColumn1",
+						"select2 derive(sourcehash = crc32(sourceIndex,sourceCustomerId,sourceFirstName,sourceLastName,sourceCompany,sourceCity,sourceCountry,sourcePhone1,sourcePhone2,sourceEmail,sourceSubscriptionDate,sourceWebsite)) ~> derivedColumn2",
+						"derivedColumn1, derivedColumn2 join(masterCustomerId == sourceCustomerId,",
+						"     joinType:'outer',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'off')~> join1",
+						"master select(mapColumn(",
+						"          masterIndex = index,",
+						"          masterCustomerId = customerId,",
+						"          masterFirstName = firstName,",
+						"          masterLastName = lastName,",
+						"          masterCompany = company,",
+						"          masterCity = city,",
+						"          masterCountry = country,",
+						"          masterPhone1 = phone1,",
+						"          masterPhone2 = phone2,",
+						"          masterEmail = email,",
+						"          masterSubscriptionDate = subscriptionDate,",
+						"          masterWebsite = website",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"incremental select(mapColumn(",
+						"          sourceIndex = Index,",
+						"          sourceCustomerId = {Customer Id},",
+						"          sourceFirstName = {First Name},",
+						"          sourceLastName = {Last Name},",
+						"          sourceCompany = Company,",
+						"          sourceCity = City,",
+						"          sourceCountry = Country,",
+						"          sourcePhone1 = {Phone 1},",
+						"          sourcePhone2 = {Phone 2},",
+						"          sourceEmail = Email,",
+						"          sourceSubscriptionDate = {Subscription Date},",
+						"          sourceWebsite = Website",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"join1 derive(active_flag = iif(isNull(masterhash),'insert',iif(isNull(sourcehash),'delete',iif(!isNull(masterhash) && !isNull(sourcehash) && sourcehash==masterhash ,'nochange','update')))) ~> derivedColumn3",
+						"inserts select(mapColumn(",
+						"          index = sourceIndex,",
+						"          customerId = sourceCustomerId,",
+						"          firstName = sourceFirstName,",
+						"          lastName = sourceLastName,",
+						"          company = sourceCompany,",
+						"          city = sourceCity,",
+						"          country = sourceCountry,",
+						"          phone1 = sourcePhone1,",
+						"          phone2 = sourcePhone2,",
+						"          email = sourceEmail,",
+						"          subscriptionDate = sourceSubscriptionDate,",
+						"          website = sourceWebsite,",
+						"          hashVal = sourcehash",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> captureInserts",
+						"updates select(mapColumn(",
+						"          index = sourceIndex,",
+						"          customerId = sourceCustomerId,",
+						"          firstName = sourceFirstName,",
+						"          lastName = sourceLastName,",
+						"          company = sourceCompany,",
+						"          city = sourceCity,",
+						"          country = sourceCountry,",
+						"          phone1 = sourcePhone1,",
+						"          phone2 = sourcePhone2,",
+						"          email = sourceEmail,",
+						"          subscriptionDate = sourceSubscriptionDate,",
+						"          website = sourceWebsite,",
+						"          hashVal = sourcehash,",
+						"          active_flag",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> captureUpdates",
+						"delets select(mapColumn(",
+						"          index = masterIndex,",
+						"          customerId = masterCustomerId,",
+						"          firstName = masterFirstName,",
+						"          lastName = masterLastName,",
+						"          company = masterCompany,",
+						"          city = masterCity,",
+						"          country = masterCountry,",
+						"          phone1 = masterPhone1,",
+						"          phone2 = masterPhone2,",
+						"          email = masterEmail,",
+						"          subscriptionDate = masterSubscriptionDate,",
+						"          website = masterWebsite,",
+						"          hashVal = masterhash",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> captureDeletes",
+						"nochange select(mapColumn(",
+						"          index = masterIndex,",
+						"          customerId = masterCustomerId,",
+						"          firstName = masterFirstName,",
+						"          lastName = masterLastName,",
+						"          company = masterCompany,",
+						"          city = masterCity,",
+						"          country = masterCountry,",
+						"          phone1 = masterPhone1,",
+						"          phone2 = masterPhone2,",
+						"          email = masterEmail,",
+						"          subscriptionDate = masterSubscriptionDate,",
+						"          website = masterWebsite,",
+						"          hashVal = masterhash",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> captureNoChange",
+						"derivedColumn3 filter(active_flag=='nochange') ~> nochange",
+						"derivedColumn3 filter(active_flag=='delete') ~> delets",
+						"derivedColumn3 filter(active_flag=='update') ~> updates",
+						"derivedColumn3 filter(active_flag=='insert') ~> inserts",
+						"expired select(mapColumn(",
+						"          index = masterIndex,",
+						"          customerId = masterCustomerId,",
+						"          firstName = masterFirstName,",
+						"          lastName = masterLastName,",
+						"          company = masterCompany,",
+						"          city = masterCity,",
+						"          country = masterCountry,",
+						"          phone1 = masterPhone1,",
+						"          phone2 = masterPhone2,",
+						"          email = masterEmail,",
+						"          subscriptionDate = masterSubscriptionDate,",
+						"          website = masterWebsite,",
+						"          hashVal = masterhash",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> captureExpired",
+						"derivedColumn3 filter(active_flag=='update') ~> expired",
+						"captureInserts, captureUpdates, captureNoChange union(byName: true)~> union1",
+						"captureExpired, captureDeletes union(byName: true)~> gatherExpiredRecords",
+						"union1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     fileSystem: 'edssilver',",
+						"     folderPath: 'sourcesystem/customer/active_temp',",
+						"     truncate: true,",
+						"     compressionCodec: 'snappy',",
+						"     umask: 0777,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> writeActiveRecords",
+						"gatherExpiredRecords sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     fileSystem: 'edssilver',",
+						"     folderPath: 'sourcesystem/customer/inactive',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> writeInactiveRecords"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Parquet1",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Parquet2",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          index as short,",
+						"          customerId as string,",
+						"          firstName as string,",
+						"          lastName as string,",
+						"          company as string,",
+						"          city as string,",
+						"          country as string,",
+						"          phone1 as string,",
+						"          phone2 as string,",
+						"          email as string,",
+						"          subscriptionDate as date,",
+						"          website as string,",
+						"          hashVal as long,",
+						"          active_flag as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     purgeFiles: true,",
+						"     format: 'parquet') ~> source1",
+						"source1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Parquet1')]",
+				"[concat(variables('factoryId'), '/datasets/Parquet2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Parquet3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "sourcesystem/customer/inactive",
+						"fileSystem": "edssilver"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "index",
+						"type": "INT_16"
+					},
+					{
+						"name": "customerId",
+						"type": "UTF8"
+					},
+					{
+						"name": "firstName",
+						"type": "UTF8"
+					},
+					{
+						"name": "lastName",
+						"type": "UTF8"
+					},
+					{
+						"name": "company",
+						"type": "UTF8"
+					},
+					{
+						"name": "city",
+						"type": "UTF8"
+					},
+					{
+						"name": "country",
+						"type": "UTF8"
+					},
+					{
+						"name": "phone1",
+						"type": "UTF8"
+					},
+					{
+						"name": "phone2",
+						"type": "UTF8"
+					},
+					{
+						"name": "email",
+						"type": "UTF8"
+					},
+					{
+						"name": "subscriptionDate",
+						"type": "DATE"
+					},
+					{
+						"name": "website",
+						"type": "UTF8"
+					},
+					{
+						"name": "hashVal",
+						"type": "INT64"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		}
+	]
+}

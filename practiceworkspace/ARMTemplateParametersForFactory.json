@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "practiceworkspace"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://onprem2cloud.dfs.core.windows.net/"
+		},
+		"connectAdfwithKeyVault_properties_typeProperties_baseUrl": {
+			"value": "@{linkedService().keyvaultUrl}"
+		}
+	}
+}
