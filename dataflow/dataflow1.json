@@ -1,0 +1,307 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					},
+					"name": "master"
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					},
+					"name": "incremental"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					},
+					"name": "writeActiveRecords"
+				},
+				{
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					},
+					"name": "writeInactiveRecords"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "captureInserts"
+				},
+				{
+					"name": "captureUpdates"
+				},
+				{
+					"name": "captureDeletes"
+				},
+				{
+					"name": "captureNoChange"
+				},
+				{
+					"name": "nochange"
+				},
+				{
+					"name": "delets"
+				},
+				{
+					"name": "updates"
+				},
+				{
+					"name": "inserts"
+				},
+				{
+					"name": "captureExpired"
+				},
+				{
+					"name": "expired"
+				},
+				{
+					"name": "union1"
+				},
+				{
+					"name": "gatherExpiredRecords"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          index as short,",
+				"          customerId as string,",
+				"          firstName as string,",
+				"          lastName as string,",
+				"          company as string,",
+				"          city as string,",
+				"          country as string,",
+				"          phone1 as string,",
+				"          phone2 as string,",
+				"          email as string,",
+				"          subscriptionDate as date,",
+				"          website as string,",
+				"          filename as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     ignoreNoFilesFound: true,",
+				"     format: 'parquet',",
+				"     fileSystem: 'edssilver',",
+				"     folderPath: 'sourcesystem/customer/active',",
+				"     partitionBy('hash', 4,",
+				"          customerId",
+				"     )) ~> master",
+				"source(output(",
+				"          Index as short,",
+				"          {Customer Id} as string,",
+				"          {First Name} as string,",
+				"          {Last Name} as string,",
+				"          Company as string,",
+				"          City as string,",
+				"          Country as string,",
+				"          {Phone 1} as string,",
+				"          {Phone 2} as string,",
+				"          Email as string,",
+				"          {Subscription Date} as date,",
+				"          Website as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     moveFiles: ['/sourcessystem/tablename/landed','/sourcessystem/tablename/processed'],",
+				"     format: 'delimited',",
+				"     fileSystem: 'edslandingzone',",
+				"     folderPath: 'sourcessystem/tablename/landed',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true,",
+				"     partitionBy('hash', 4,",
+				"          {Customer Id}",
+				"     )) ~> incremental",
+				"select1 derive(masterhash = crc32(masterIndex,masterCustomerId,masterFirstName,masterLastName,masterCompany,masterCity,masterCountry,masterPhone1,masterPhone2,masterEmail,masterSubscriptionDate,masterWebsite)) ~> derivedColumn1",
+				"select2 derive(sourcehash = crc32(sourceIndex,sourceCustomerId,sourceFirstName,sourceLastName,sourceCompany,sourceCity,sourceCountry,sourcePhone1,sourcePhone2,sourceEmail,sourceSubscriptionDate,sourceWebsite)) ~> derivedColumn2",
+				"derivedColumn1, derivedColumn2 join(masterCustomerId == sourceCustomerId,",
+				"     joinType:'outer',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'off')~> join1",
+				"master select(mapColumn(",
+				"          masterIndex = index,",
+				"          masterCustomerId = customerId,",
+				"          masterFirstName = firstName,",
+				"          masterLastName = lastName,",
+				"          masterCompany = company,",
+				"          masterCity = city,",
+				"          masterCountry = country,",
+				"          masterPhone1 = phone1,",
+				"          masterPhone2 = phone2,",
+				"          masterEmail = email,",
+				"          masterSubscriptionDate = subscriptionDate,",
+				"          masterWebsite = website",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"incremental select(mapColumn(",
+				"          sourceIndex = Index,",
+				"          sourceCustomerId = {Customer Id},",
+				"          sourceFirstName = {First Name},",
+				"          sourceLastName = {Last Name},",
+				"          sourceCompany = Company,",
+				"          sourceCity = City,",
+				"          sourceCountry = Country,",
+				"          sourcePhone1 = {Phone 1},",
+				"          sourcePhone2 = {Phone 2},",
+				"          sourceEmail = Email,",
+				"          sourceSubscriptionDate = {Subscription Date},",
+				"          sourceWebsite = Website",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"join1 derive(active_flag = iif(isNull(masterhash),'insert',iif(isNull(sourcehash),'delete',iif(!isNull(masterhash) && !isNull(sourcehash) && sourcehash==masterhash ,'nochange','update')))) ~> derivedColumn3",
+				"inserts select(mapColumn(",
+				"          index = sourceIndex,",
+				"          customerId = sourceCustomerId,",
+				"          firstName = sourceFirstName,",
+				"          lastName = sourceLastName,",
+				"          company = sourceCompany,",
+				"          city = sourceCity,",
+				"          country = sourceCountry,",
+				"          phone1 = sourcePhone1,",
+				"          phone2 = sourcePhone2,",
+				"          email = sourceEmail,",
+				"          subscriptionDate = sourceSubscriptionDate,",
+				"          website = sourceWebsite,",
+				"          hashVal = sourcehash",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> captureInserts",
+				"updates select(mapColumn(",
+				"          index = sourceIndex,",
+				"          customerId = sourceCustomerId,",
+				"          firstName = sourceFirstName,",
+				"          lastName = sourceLastName,",
+				"          company = sourceCompany,",
+				"          city = sourceCity,",
+				"          country = sourceCountry,",
+				"          phone1 = sourcePhone1,",
+				"          phone2 = sourcePhone2,",
+				"          email = sourceEmail,",
+				"          subscriptionDate = sourceSubscriptionDate,",
+				"          website = sourceWebsite,",
+				"          hashVal = sourcehash,",
+				"          active_flag",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> captureUpdates",
+				"delets select(mapColumn(",
+				"          index = masterIndex,",
+				"          customerId = masterCustomerId,",
+				"          firstName = masterFirstName,",
+				"          lastName = masterLastName,",
+				"          company = masterCompany,",
+				"          city = masterCity,",
+				"          country = masterCountry,",
+				"          phone1 = masterPhone1,",
+				"          phone2 = masterPhone2,",
+				"          email = masterEmail,",
+				"          subscriptionDate = masterSubscriptionDate,",
+				"          website = masterWebsite,",
+				"          hashVal = masterhash",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> captureDeletes",
+				"nochange select(mapColumn(",
+				"          index = masterIndex,",
+				"          customerId = masterCustomerId,",
+				"          firstName = masterFirstName,",
+				"          lastName = masterLastName,",
+				"          company = masterCompany,",
+				"          city = masterCity,",
+				"          country = masterCountry,",
+				"          phone1 = masterPhone1,",
+				"          phone2 = masterPhone2,",
+				"          email = masterEmail,",
+				"          subscriptionDate = masterSubscriptionDate,",
+				"          website = masterWebsite,",
+				"          hashVal = masterhash",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> captureNoChange",
+				"derivedColumn3 filter(active_flag=='nochange') ~> nochange",
+				"derivedColumn3 filter(active_flag=='delete') ~> delets",
+				"derivedColumn3 filter(active_flag=='update') ~> updates",
+				"derivedColumn3 filter(active_flag=='insert') ~> inserts",
+				"expired select(mapColumn(",
+				"          index = masterIndex,",
+				"          customerId = masterCustomerId,",
+				"          firstName = masterFirstName,",
+				"          lastName = masterLastName,",
+				"          company = masterCompany,",
+				"          city = masterCity,",
+				"          country = masterCountry,",
+				"          phone1 = masterPhone1,",
+				"          phone2 = masterPhone2,",
+				"          email = masterEmail,",
+				"          subscriptionDate = masterSubscriptionDate,",
+				"          website = masterWebsite,",
+				"          hashVal = masterhash",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> captureExpired",
+				"derivedColumn3 filter(active_flag=='update') ~> expired",
+				"captureInserts, captureUpdates, captureNoChange union(byName: true)~> union1",
+				"captureExpired, captureDeletes union(byName: true)~> gatherExpiredRecords",
+				"union1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'edssilver',",
+				"     folderPath: 'sourcesystem/customer/active_temp',",
+				"     truncate: true,",
+				"     compressionCodec: 'snappy',",
+				"     umask: 0777,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> writeActiveRecords",
+				"gatherExpiredRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'edssilver',",
+				"     folderPath: 'sourcesystem/customer/inactive',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> writeInactiveRecords"
+			]
+		}
+	}
+}

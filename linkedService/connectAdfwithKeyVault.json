@@ -1,0 +1,17 @@
+{
+	"name": "connectAdfwithKeyVault",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"keyvaultUrl": {
+				"type": "string",
+				"defaultValue": "https://keyvault2024adf.vault.azure.net/"
+			}
+		},
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "@{linkedService().keyvaultUrl}"
+		}
+	}
+}
