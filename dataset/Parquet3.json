@@ -1,0 +1,73 @@
+{
+	"name": "Parquet3",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "sourcesystem/customer/inactive",
+				"fileSystem": "edssilver"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "index",
+				"type": "INT_16"
+			},
+			{
+				"name": "customerId",
+				"type": "UTF8"
+			},
+			{
+				"name": "firstName",
+				"type": "UTF8"
+			},
+			{
+				"name": "lastName",
+				"type": "UTF8"
+			},
+			{
+				"name": "company",
+				"type": "UTF8"
+			},
+			{
+				"name": "city",
+				"type": "UTF8"
+			},
+			{
+				"name": "country",
+				"type": "UTF8"
+			},
+			{
+				"name": "phone1",
+				"type": "UTF8"
+			},
+			{
+				"name": "phone2",
+				"type": "UTF8"
+			},
+			{
+				"name": "email",
+				"type": "UTF8"
+			},
+			{
+				"name": "subscriptionDate",
+				"type": "DATE"
+			},
+			{
+				"name": "website",
+				"type": "UTF8"
+			},
+			{
+				"name": "hashVal",
+				"type": "INT64"
+			}
+		]
+	}
+}
