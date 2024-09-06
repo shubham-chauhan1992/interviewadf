@@ -1,0 +1,9 @@
+{
+	"name": "practiceworkspace",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "40945e68-9cea-403c-a2b2-9406d6efb49e",
+		"tenantId": "b42c5bcc-de30-4d55-b3db-ce032ea87a5a"
+	}
+}
